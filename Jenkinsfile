@@ -1,52 +1,23 @@
-
-node {
-   // This is to demo github action	
-   def sonarUrl = 'sonar.host.url=http://172.31.30.136:9000'
-   def mvn = tool (name: 'maven3', type: 'maven') + '/bin/mvn'
-   stage('SCM Checkout'){
-    // Clone repo
-	git branch: 'master', 
-	credentialsId: 'github', 
-	url: 'https://github.com/javahometech/myweb'
-   
+node
+{
+ stage('Mvn Package'){
+     def mvnHome = tool name: 'maven-3', type: 'maven'
+     def mvnCMD = "${mvnHome}/bin/mvn"
+     sh "${mvnCMD} clean package"
    }
-   
-   stage('Sonar Publish'){
-	   withCredentials([string(credentialsId: 'sonarqube', variable: 'sonarToken')]) {
-        def sonarToken = "sonar.login=${sonarToken}"
-        sh "${mvn} sonar:sonar -D${sonarUrl}  -D${sonarToken}"
-	 }
-      
+   stage('Build Docker Image'){
+			sh 'docker build -t vijayshegde/myapp:2.0.0 .'
    }
-   
-	
-   stage('Mvn Package'){
-	   // Build using maven
-	   
-	   sh "${mvn} clean package deploy"
+   stage('Push Docker Image'){
+     withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+        sh "docker login -u vijayshegde -p ${dockerHubPwd}"
+     }
+     sh 'docker push vijayshegde/my-app:2.0.0'
    }
-   
-   stage('deploy-dev'){
-       def tomcatDevIp = '172.31.28.172'
-	   def tomcatHome = '/opt/tomcat8/'
-	   def webApps = tomcatHome+'webapps/'
-	   def tomcatStart = "${tomcatHome}bin/startup.sh"
-	   def tomcatStop = "${tomcatHome}bin/shutdown.sh"
-	   
-	   sshagent (credentials: ['tomcat-dev']) {
-	      sh "scp -o StrictHostKeyChecking=no target/myweb*.war ec2-user@${tomcatDevIp}:${webApps}myweb.war"
-          sh "ssh ec2-user@${tomcatDevIp} ${tomcatStop}"
-		  sh "ssh ec2-user@${tomcatDevIp} ${tomcatStart}"
-       }
-   }
-   stage('Email Notification'){
-		mail bcc: '', body: """Hi Team, You build successfully deployed
-		                       Job URL : ${env.JOB_URL}
-							   Job Name: ${env.JOB_NAME}
-
-Thanks,
-DevOps Team""", cc: '', from: '', replyTo: '', subject: "${env.JOB_NAME} Success", to: 'hari.kammana@gmail.com'
-   
+   stage('Run Container on Dev Server'){
+     def dockerRun = 'docker run -p 8090:8090 -d --name my-app vijayshegde/my-app:2.0.0'
+     sshagent(['dev-server']) {
+       sh "ssh -o StrictHostKeyChecking=no ec2-user@13.232.40.185 ${dockerRun}"
+     }
    }
 }
-
