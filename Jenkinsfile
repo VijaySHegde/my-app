@@ -25,6 +25,7 @@ node
      def dockerRun = 'docker run -p 8090:8090 -d --name my-app vijayshegde/myapp:2.0.0'
      sshagent(['dev-server']) {
        sh "ssh -o StrictHostKeyChecking=no ec2-user@13.232.40.185 ${dockerRun}"
+	    sh ' docker pull vijayshegde/myapp'
      }
    }
 }
