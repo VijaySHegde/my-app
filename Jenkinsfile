@@ -1,6 +1,7 @@
 node
 {
-	 stage('SCM Checkout'){
+	 stage('SCM Checkout')
+	{
 	git 'https://github.com/VijaySHegde/my-app.git'
 }
  stage('Mvn Package'){
@@ -24,3 +25,5 @@ node
      }
    }
 }
+
+*/
