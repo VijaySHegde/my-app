@@ -8,10 +8,11 @@ node
     
      sh 'mvn clean package'
    }
-}
+
    stage('Build Docker Image'){
 			sh 'docker build -t vijayshegde/myapp:2.0.0 .'
    }
+		}
 /*
    stage('Push Docker Image'){
      withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
